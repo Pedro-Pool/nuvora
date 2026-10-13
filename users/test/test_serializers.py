@@ -8,6 +8,8 @@ class RegisterSerializerTest(TestCase):
     def test_create_serializer(self):
         data = {
             "email": "pedro@email.com",
+            "first_name": "pedro",
+            "last_name": "silva",
             "password": "password123",
         }
 
