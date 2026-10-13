@@ -6,7 +6,7 @@ from .models import Product
 from .serializers import ProductSerializer
 from stores.models import Store
 
-class ProductListCreateView(generics.ListAPIView):
+class ProductListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
 
     def get_permissions(self):
@@ -21,13 +21,13 @@ class ProductListCreateView(generics.ListAPIView):
         try:
             store = Store.objects.get(owner=self.request.user)
         except Store.DoesNotExist:
-            raise ValidationError("Store does not exist")
+            raise NotFound("Store does not exist")
 
         serializer.save(store=store)
 
 class ProductDetailView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return Product.objects.filter(is_active=True)

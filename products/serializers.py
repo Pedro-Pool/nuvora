@@ -10,7 +10,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'price',
-            'stock'
+            'stock',
             'is_active',
             'created_at',
         )
