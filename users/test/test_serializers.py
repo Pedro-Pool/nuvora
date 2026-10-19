@@ -5,7 +5,9 @@ from users.models import User
 from users.serializers import RegisterSerializer
 
 class RegisterSerializerTest(TestCase):
-    def test_create_serializer(self):
+    def test_01(self):
+        """Test create serializer"""
+
         data = {
             "email": "pedro@email.com",
             "first_name": "pedro",
@@ -22,7 +24,9 @@ class RegisterSerializerTest(TestCase):
         self.assertTrue(user.check_password("password123"))
         self.assertNotEqual(user.password, "password123")
 
-    def test_password_must_have_at_least_8_characters(self):
+    def test_02(self):
+        """Test password must have at least 8 characters"""
+
         data = {
             "email": "pedro@email.com",
             "password": "123",

@@ -16,7 +16,9 @@ class StoreViewsTest(TestCase):
         )
         self.client.force_authenticate(user=self.user)
 
-    def test_authenticated_user_can_create_store(self):
+    def test_01(self):
+        """Test authenticated user can create store"""
+
         response = self.client.post(
             "/api/stores/",
             {
@@ -29,7 +31,9 @@ class StoreViewsTest(TestCase):
         self.assertTrue(Store.objects.filter(owner=self.user).exists())
         self.assertEqual(response.data["name"], "My Store")
 
-    def test_authenticated_user_cannot_create_store(self):
+    def test_02(self):
+        """Test authenticated user cannot create store"""
+
         self.client.force_authenticate(user=None)
         response = self.client.post(
             "/api/stores/",
@@ -38,7 +42,9 @@ class StoreViewsTest(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_user_can_retrieve_own_store(self):
+    def test_03(self):
+        """Test user can retrieve own store"""
+
         Store.objects.create(
             owner=self.user,
             name="My Store",
@@ -49,12 +55,16 @@ class StoreViewsTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], "My Store")
 
-    def test_user_without_store_gets_404(self):
+    def test_04(self):
+        """Test user without store gets 404"""
+
         response = self.client.get("/api/stores/me/")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_user_cannot_create_second_store(self):
+    def test_05(self):
+        """Test user cannot create second store"""
+
         Store.objects.create(
             owner=self.user,
             name="My Store",

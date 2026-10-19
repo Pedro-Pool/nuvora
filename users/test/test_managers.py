@@ -4,7 +4,9 @@ from users.models import User
 
 class UserManagerTests(TestCase):
 
-    def test_create_user(self):
+    def test_01(self):
+        """Test create user"""
+
         user = User.objects.create_user(
             email="pedro@email.com",
             password="password123",
@@ -16,14 +18,18 @@ class UserManagerTests(TestCase):
         self.assertFalse(user.is_superuser)
         self.assertTrue(user.is_active)
 
-    def test_create_user_with_wrong_password(self):
+    def test_02(self):
+        """Test create user with wrong password"""
+
         user = User.objects.create_user(
             email="pedro@email.com",
             password="password123",
         )
         self.assertFalse(user.check_password("password-wrong"))
 
-    def test_create_superuser(self):
+    def test_03(self):
+        """Test create superuser"""
+
         user = User.objects.create_superuser(
             email="admin@email.com",
             password="password123",

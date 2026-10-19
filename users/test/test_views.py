@@ -11,7 +11,9 @@ class RegisterViewTest(TestCase):
         self.client = APIClient()
         self.url = "/api/auth/register/"
 
-    def test_register_user_successfully(self):
+    def test_01(self):
+        """Test register user successfully"""
+
         data = {
             "email": "pedro@email.com",
             "first_name": "pedro",
@@ -28,7 +30,9 @@ class RegisterViewTest(TestCase):
         self.assertTrue(user.check_password("password123"))
         self.assertNotEqual(user.password, "password123")
 
-    def test_register_user_wit_invalid_email(self):
+    def test_02(self):
+        """Test register user wit invalid email"""
+
         data = {
             "email": "email-invalid",
             "first_name": "pedro",
@@ -41,7 +45,9 @@ class RegisterViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(User.objects.filter(email="email-invalid").exists())
 
-    def test_register_user_with_short_password(self):
+    def test_03(self):
+        """Test register user with short password"""
+
         data = {
             "email": "pedro@email.com",
             "first_name": "pedro",
@@ -65,7 +71,9 @@ class LoginViewTest(TestCase):
             last_name="Silva",
             password="password123",
         )
-    def test_login_return_tokens(self):
+    def test_01(self):
+        """Test login return tokens"""
+
         response = self.client.post(
             self.url, {
                 "email": "pedro@email.com",
@@ -80,7 +88,9 @@ class LoginViewTest(TestCase):
         self.assertIn("access", response_data)
         self.assertIn("refresh", response_data)
 
-    def test_login_with_wrong_password(self):
+    def test_02(self):
+        """Test login with wrong password"""
+
         response = self.client.post(
             self.url, {
                 "email": "pedro@email.com",
@@ -102,7 +112,9 @@ class RefreshTokenViewTest(TestCase):
 
         self.refresh_token = str(RefreshToken.for_user(user))
 
-    def test_refresh_token_sucessfuly(self):
+    def test_01(self):
+        """Test refresh token successfully"""
+
         response = self.client.post(
             self.url,
             {"refresh": self.refresh_token},
@@ -111,7 +123,9 @@ class RefreshTokenViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.json())
 
-    def test_refresh_token_invalid(self):
+    def test_02(self):
+        """Test refresh token invalid"""
+
         response = self.client.post(
             self.url,
             {"refresh": "invalid token"},
@@ -135,7 +149,9 @@ class MeViewTest(TestCase):
 
         self.url = "/api/users/me/"
 
-    def test_authenticated_user_can_access(self):
+    def test_01(self):
+        """Test authenticated user can access"""
+
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
         )
@@ -146,7 +162,9 @@ class MeViewTest(TestCase):
         self.assertEqual(response.data["first_name"], "Pedro")
         self.assertEqual(response.data["last_name"], "Silva")
 
-    def test_unauthenticated_user_cannot_access_me(self):
+    def test_02(self):
+        """Test unauthenticated user cannot access me"""
+
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
