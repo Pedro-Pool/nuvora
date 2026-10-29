@@ -22,6 +22,9 @@ ASAAS_BASE_URL = config(
     "ASAAS_BASE_URL",
     default="https://api-sandbox.asaas.com/v3",
 )
+ASAAS_SUCCESS_URL = config("ASAAS_SUCCESS_URL")
+ASAAS_CANCEL_URL = config("ASAAS_CANCEL_URL")
+ASAAS_EXPIRED_URL = config("ASAAS_EXPIRED_URL")
 
 
 # Quick-start development settings - unsuitable for production
@@ -33,7 +36,11 @@ SECRET_KEY = config("SECRET_KEY", default="")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "almanac-gills-catching.ngrok-free.dev",
+]
 
 
 # Application definition

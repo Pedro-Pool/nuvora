@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from rest_framework import status
 from rest_framework.test import APITestCase
+from unittest.mock import patch
 
 from orders.models import Order
 from payments.models import Payment
@@ -22,6 +23,16 @@ class PaymentAPITest(APITestCase):
             total_amount=Decimal("99.90"),
         )
         self.url = "/api/payments/"
+
+        self.checkout_patcher = patch(
+            "payments.views.create_asaas_checkout",
+            return_value={
+                "checkout_id":"chk_test123",
+                "checkout_url":"https://example.com/checkout",
+            }
+        )
+        self.mock_create_checkout = self.checkout_patcher.start()
+        self.addCleanup(self.checkout_patcher.stop)
 
     def test_01(self):
         """Should create pending payment"""

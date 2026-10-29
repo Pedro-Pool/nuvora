@@ -1,6 +1,7 @@
-from decimal import Decimal
-
 from django.db import transaction
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ from rest_framework.views import APIView
 from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer
+from .service import AsaasError, create_asaas_checkout
 
 class PaymentListCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -52,11 +54,27 @@ class PaymentListCreateView(APIView):
                 order=order,
                 amount=order.total_amount,
                 currency="BRL",
-                provider=Payment.Provider.MANUAL,
+                provider=Payment.Provider.ASAAS,
                 status=Payment.Status.PENDING,
             )
+
+            try:
+                checkout = create_asaas_checkout(payment)
+            except AsaasError:
+                payment.status = Payment.Status.FAILED
+                payment.save(update_fields=["status", "updated_at"])
+
+                return Response(
+                    {"detail": "Unable to create the payment checkout"},
+                    status=status.HTTP_502_BAD_GATEWAY)
+
             serializer = PaymentSerializer(payment)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    **serializer.data,
+                    "checkout_url": checkout["checkout_url"],
+                },
+                status=status.HTTP_201_CREATED)
 
 class PaymentDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -69,3 +87,14 @@ class PaymentDetailView(APIView):
 
         serializer = PaymentSerializer(payment)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CheckoutReturnView(APIView):
+    permission_classes = []
+    def get(self, request):
+        return HttpResponse("Checkout response received ""The payment status needs to be confirmed")
+
+class CheckoutCancelView(APIView):
+    permission_classes = []
+
+    def get(self, request):
+        return HttpResponse("Checkout canceled or interrupted""The payment status has not been changed")
