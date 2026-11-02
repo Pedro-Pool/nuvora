@@ -25,6 +25,7 @@ ASAAS_BASE_URL = config(
 ASAAS_SUCCESS_URL = config("ASAAS_SUCCESS_URL")
 ASAAS_CANCEL_URL = config("ASAAS_CANCEL_URL")
 ASAAS_EXPIRED_URL = config("ASAAS_EXPIRED_URL")
+ASAAS_WEBHOOK_TOKEN = config("ASAAS_WEBHOOK_TOKEN")
 
 
 # Quick-start development settings - unsuitable for production
