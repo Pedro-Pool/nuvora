@@ -153,12 +153,29 @@ class AsaasWebhookEventView(APIView):
         if checkout.get("status") != "PAID":
             return Response({"detail": "Checkout is not marked as paid"}, status=status.HTTP_400_BAD_REQUEST)
 
-        with transaction.atomic():
+        with (transaction.atomic()):
+            try:
+                payment_lookup = Payment.objects.only("id", "order_id").get(
+                    provider=Payment.Provider.ASAAS, provider_checkout_id=checkout_id
+                )
+            except Payment.DoesNotExist:
+                return Response({"detail": "Payment not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            try:
+                order = Order.objects.select_for_update().get(pk=payment_lookup.order_id)
+            except Order.DoesNotExist:
+                return Response({"detail": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+
             try:
                 payment = (
                     Payment.objects.
                     select_for_update()
-                    .get(provider=Payment.Provider.ASAAS, provider_checkout_id=checkout_id))
+                    .get(
+                        pk=payment_lookup.pk,
+                        provider=Payment.Provider.ASAAS,
+                        provider_checkout_id=checkout_id
+                    )
+                )
             except Payment.DoesNotExist:
                 return Response({"detail": "Payment not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -167,13 +184,13 @@ class AsaasWebhookEventView(APIView):
                 defaults={"event_type":event_type}
             )
 
+            event = AsaasWebhookEvent.objects.select_for_update().get(pk=event.pk)
+
             if event.event_type != event_type:
-                return Response({"detail":"Event ID conflict"}, status=status.HTTP_409_CONFLICT)
+                return Response({"detail":"Event detail mismatch"}, status=status.HTTP_400_BAD_REQUEST)
 
             if event.processed:
                 return Response({"detail":"Event already processed"}, status=status.HTTP_200_OK)
-
-            order = Order.objects.select_for_update().get(pk=payment.order_id)
 
             if payment.status not in(
                 Payment.Status.PENDING,

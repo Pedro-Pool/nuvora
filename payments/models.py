@@ -10,6 +10,7 @@ class Payment(models.Model):
         PENDING = 'pending', 'Pending'
         APPROVED = 'approved', 'Approved'
         FAILED = 'failed', 'Failed'
+        CANCELED = 'canceled', 'Canceled'
         REFUNDED = 'refunded', 'Refunded'
 
     class Provider(models.TextChoices):

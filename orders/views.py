@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from cart.models import Cart, CartItem
 from orders.models import Order, OrderItem
 from orders.serializers import OrderSerializer
+from payments.models import Payment
 from products.models import Product
 
 
@@ -106,29 +107,44 @@ class OrderCanceledView(APIView):
             allowed_statuses = {
                 Order.Status.PENDING,
                 Order.Status.CONFIRMED,
-                Order.Status.PROCESSING,
             }
 
             if order.status not in allowed_statuses:
                 return Response({"detail":"This order cannot be cancelled"}, status=status.HTTP_400_BAD_REQUEST)
+
+            payments = list(Payment.objects.select_for_update().filter(order=order).order_by("pk"))
+
+            if any(payment.status == Payment.Status.APPROVED
+                   for payment in payments):
+                return Response(
+                    {"detail":"This order has an approved payment and requires a refound"},
+                    status=status.HTTP_409_CONFLICT)
 
             items = list(order.items.all().order_by("product_id"))
 
             products = {}
 
             for item in items:
-                try:
-                    product = (Product.objects.select_for_update().get(pk=item.product_id))
-                except Product.DoesNotExist:
-                    return Response({"detail":"A product from this order no longer exists"},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                if item.product_id not in products:
+                    try:
+                        product = (Product.objects.select_for_update().get(pk=item.product_id))
+                    except Product.DoesNotExist:
+                        return Response({"detail":"A product from this order no longer exists"},
+                                        status=status.HTTP_400_BAD_REQUEST)
 
                 products[product.pk] = product
 
             for item in items:
                 product = products[item.product_id]
                 product.stock += item.quantity
+
+            for product in products.values():
                 product.save(update_fields=['stock'])
+
+            for payment in payments:
+                if payment.status == Payment.Status.PENDING:
+                    payment.status = Payment.Status.CANCELED
+                    payment.save(update_fields=['status', 'updated_at'])
 
             order.status = Order.Status.CANCELED
             order.save(update_fields=['status', 'updated_at'])

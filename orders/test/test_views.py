@@ -8,6 +8,7 @@ from django.db import DatabaseError
 
 from cart.models import Cart, CartItem
 from orders.models import Order, OrderItem
+from payments.models import Payment
 from products.models import Product
 from users.models import User
 from stores.models import Store
@@ -170,7 +171,7 @@ class OrderCreateViewTests(APITestCase):
             user=other_user,
             total_amount=Decimal("100.00"),
         )
-        response = self.client.get(f'{self.user}{order.id}/')
+        response = self.client.get(f'{self.url}{order.id}/')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -284,3 +285,73 @@ class OrderCreateViewTests(APITestCase):
 
         order.refresh_from_db()
         self.assertEqual(order.status, Order.Status.DELIVERED)
+
+    def test_15(self):
+        """Cancel order cancels pending payments"""
+
+        order = Order.objects.create(
+            user=self.user,
+            total_amount=Decimal("50.00"),
+            status=Order.Status.PENDING,
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=self.product,
+            product_name=self.product.name,
+            unit_price=self.product.price,
+            quantity=2
+        )
+        self.product.stock = 8
+        self.product.save(update_fields=["stock"])
+
+        payment = Payment.objects.create(
+            order=order,
+            amount=Decimal("50.00"),
+            status=Payment.Status.PENDING,
+        )
+        response = self.client.post(f'{self.url}{order.id}/cancel/', format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        order.refresh_from_db()
+        payment.refresh_from_db()
+        self.product.refresh_from_db()
+
+        self.assertEqual(order.status, Order.Status.CANCELED)
+        self.assertEqual(payment.status, Payment.Status.CANCELED)
+        self.assertEqual(self.product.stock, 10)
+
+    def test_16(self):
+        """Cannot cancel order with approved payments"""
+
+        order = Order.objects.create(
+            user=self.user,
+            total_amount=Decimal("50.00"),
+            status=Order.Status.CONFIRMED,
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=self.product,
+            product_name=self.product.name,
+            unit_price=self.product.price,
+            quantity=2
+        )
+        self.product.stock = 8
+        self.product.save(update_fields=["stock"])
+
+        payment = Payment.objects.create(
+            order=order,
+            amount=Decimal("50.00"),
+            status=Payment.Status.APPROVED,
+        )
+        response = self.client.post(f'{self.url}{order.id}/cancel/',format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+
+        order.refresh_from_db()
+        payment.refresh_from_db()
+        self.product.refresh_from_db()
+
+        self.assertEqual(order.status, Order.Status.CONFIRMED)
+        self.assertEqual(payment.status, Payment.Status.APPROVED)
+        self.assertEqual(self.product.stock, 8)
